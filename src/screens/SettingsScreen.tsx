@@ -1,8 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { db } from '../db'
+import { isBackup } from '../domain/backup'
 import { importStarter, isStarterData } from '../domain/library'
 import { BottomNav, Header } from '../ui'
+import { BackupSection } from './BackupSection'
 
 export function SettingsScreen() {
   const exerciseCount = useLiveQuery(() => db.exercises.count(), [])
@@ -17,6 +19,10 @@ export function SettingsScreen() {
   const importFile = async (file: File) => {
     try {
       const data: unknown = JSON.parse(await file.text())
+      if (isBackup(data)) {
+        setMessage("That's a backup, so nothing was changed. Use Restore from a backup for those.")
+        return
+      }
       if (!isStarterData(data)) throw new Error('not a plans file')
       const count = await importStarter(db, data)
       setMessage(`Loaded ${count} past plans.`)
@@ -29,6 +35,7 @@ export function SettingsScreen() {
     <div className="screen with-nav">
       <Header title="Settings" />
       <main className="form">
+        <BackupSection />
         <section>
           <h2 className="section-title">Your past plans</h2>
           <p className="hint">

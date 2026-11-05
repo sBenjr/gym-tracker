@@ -886,3 +886,38 @@ section + section {
   overflow: hidden;
   clip-path: inset(50%);
 }
+
+.backup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.backup-nudge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--tap);
+  margin-top: 8px;
+  padding: 10px 14px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 0;
+  border-left: 4px solid var(--warning);
+  border-radius: 8px;
+}
+
+.backup-nudge-action {
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+section > .hint + .button {
+  margin-top: 10px;
+}

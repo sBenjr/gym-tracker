@@ -7,6 +7,7 @@ import { labelFor, SESSION_TYPES } from '../labels'
 import { navigate } from '../router'
 import type { Session } from '../types'
 import { BottomNav, ConfirmButton, Header } from '../ui'
+import { BackupNudge } from './BackupSection'
 
 const STATUS_LABEL: Partial<Record<Session['status'], string>> = { done: 'Done', skipped: 'Skipped', active: 'In progress' }
 
@@ -70,6 +71,7 @@ export function TodayScreen() {
           <button type="button" className="button primary" onClick={() => navigate('/programmes')}>
             Go to Programmes
           </button>
+          <BackupNudge />
         </main>
         <BottomNav active="today" />
       </div>
@@ -108,6 +110,7 @@ export function TodayScreen() {
             )}
           </ul>
         </section>
+        <BackupNudge />
         <ThisWeek sessions={sessions} week={session.weekNumber} />
         {!resuming && (
           <ConfirmButton

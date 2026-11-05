@@ -1,11 +1,18 @@
 import Dexie, { type Table } from 'dexie'
 import type { Exercise, Programme, Session, SetLog } from './types'
 
+/** Small app-level values, such as when the last backup was made. */
+export interface MetaRow {
+  key: string
+  value: number
+}
+
 export class GymDb extends Dexie {
   exercises!: Table<Exercise, string>
   programmes!: Table<Programme, string>
   sessions!: Table<Session, string>
   sets!: Table<SetLog, string>
+  meta!: Table<MetaRow, string>
 
   constructor(name = 'gym-tracker') {
     super(name)
@@ -24,6 +31,7 @@ export class GymDb extends Dexie {
         }),
     )
     this.version(3).stores({ sets: 'id, sessionId, exerciseId' })
+    this.version(4).stores({ meta: 'key' })
   }
 }
 

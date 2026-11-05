@@ -57,7 +57,8 @@ export interface StarterData {
 
 export function isStarterData(value: unknown): value is StarterData {
   const data = value as StarterData
-  return data?.version === 1 && Array.isArray(data.programmes)
+  // A backup also has a version and programmes, but its programmes have no key.
+  return data?.version === 1 && Array.isArray(data.programmes) && data.programmes.every((p) => typeof p?.key === 'string')
 }
 
 /** Loads past plans as ones to copy from. Running it twice replaces them rather than doubling up. */
