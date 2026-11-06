@@ -238,16 +238,15 @@ function formatAmount(target: Target, withRounds: boolean): string {
   return withRounds ? range : `${range} reps`
 }
 
-/** Reads like the plans in the old app: "3 x 8-10 @ RIR 2", "3 x 20m", "8 reps each side". */
+/** Reads like the plans in the old app: "3 x 8-10", "3 x 20m", "50m @ 70kg". */
 export function formatTarget(target: Target, rounds?: number): string {
   if (target.max === 0) return 'Warm-up'
-  const amount = formatAmount(target, !!rounds) + (target.perSide ? ' each side' : '')
+  const amount = formatAmount(target, !!rounds)
   const base = rounds ? `${rounds} x ${amount}` : amount
   const load =
     (target.weightKg ? ` @ ${target.weightKg}kg` : '') +
     (target.goalKg ? `, building to ${target.goalKg}kg` : '')
-  const effort = target.rir !== undefined ? ` @ RIR ${target.rir}` : ''
-  return base + load + effort
+  return base + load
 }
 
 export const formatDate = (isoDate?: string) =>

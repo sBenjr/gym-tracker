@@ -17,6 +17,7 @@ import {
   parseDuration,
   plannedSets,
   prefill,
+  takesWeight,
   remainingSets,
   restAfter,
   startWorkout,
@@ -146,9 +147,18 @@ describe('prefill', () => {
   })
   const buildUp = [lastSet(1, 16, 12), lastSet(2, 23, 12), lastSet(3, 28, 10)]
 
-  it('copies the same set last time, so building up is kept', () => {
-    expect(prefill(session, block, target, 1, buildUp, [])).toMatchObject({ weightKg: 16, reps: 12 })
-    expect(prefill(session, block, target, 3, buildUp, [])).toMatchObject({ weightKg: 28, reps: 10 })
+  it("copies each set's weight from last time, so building up is kept", () => {
+    expect(prefill(session, block, target, 1, buildUp, [])).toMatchObject({ weightKg: 16 })
+    expect(prefill(session, block, target, 3, buildUp, [])).toMatchObject({ weightKg: 28 })
+  })
+
+  it('always fills reps, time and distance from the plan, not from last time', () => {
+    expect(prefill(session, block, target, 1, buildUp, []).reps).toBe(10)
+    expect(prefill(session, block, target, 3, buildUp, []).reps).toBe(10)
+    const today = [{ ...lastSet(1, 40, 7), sessionId: 's1' }]
+    expect(prefill(session, block, target, 2, buildUp, today).reps).toBe(10)
+    const plank = [{ ...lastSet(1, 0, 0), reps: undefined, seconds: 45 }]
+    expect(prefill(session, block, { measure: 'seconds', min: 30, max: 30 }, 1, plank, []).seconds).toBe(30)
   })
 
   it('moves later sets by the same amount when today has changed', () => {
@@ -160,7 +170,7 @@ describe('prefill', () => {
   it('uses the plan the first time, then carries today forward', () => {
     expect(prefill(session, block, { ...target, weightKg: 70 }, 1, [], [])).toMatchObject({ weightKg: 70, reps: 10 })
     const today = [{ ...lastSet(1, 40, 11), sessionId: 's1' }]
-    expect(prefill(session, block, target, 2, [], today)).toMatchObject({ weightKg: 40, reps: 11 })
+    expect(prefill(session, block, target, 2, [], today)).toMatchObject({ weightKg: 40, reps: 10 })
   })
 
   it('leaves RIR and effort blank, so confirming never records a feeling you did not have', () => {
@@ -286,5 +296,20 @@ describe('saving a workout', () => {
     await discardWorkout(db, session.id)
     expect(await db.sets.count()).toBe(0)
     expect((await db.sessions.get(session.id))?.status).toBe('planned')
+  })
+})
+
+describe('takesWeight', () => {
+  it('offers a weight on every strength move, including bodyweight ones', () => {
+    expect(takesWeight(curl)).toBe(true)
+    expect(takesWeight(newExercise('Sit-Up To V', { load: 'bodyweight' }))).toBe(true)
+    expect(takesWeight(newExercise('Assisted Pull-Up', { load: 'assisted' }))).toBe(true)
+  })
+
+  it('offers a weight on loaded conditioning, but not on runs, rows or stretches', () => {
+    expect(takesWeight(newExercise('Sled Push', { kind: 'conditioning', load: 'weighted' }))).toBe(true)
+    expect(takesWeight(newExercise('Running', { kind: 'conditioning', load: 'bodyweight' }))).toBe(false)
+    expect(takesWeight(stretch)).toBe(false)
+    expect(takesWeight(undefined)).toBe(false)
   })
 })

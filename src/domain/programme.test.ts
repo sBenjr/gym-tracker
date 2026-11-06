@@ -160,12 +160,12 @@ describe('copyProgramme', () => {
 
 describe('formatTarget', () => {
   it('reads the way the plans are written', () => {
-    expect(formatTarget({ measure: 'reps', min: 8, max: 8, rir: 2 }, 3)).toBe('3 x 8 @ RIR 2')
+    expect(formatTarget({ measure: 'reps', min: 8, max: 8, rir: 2 }, 3)).toBe('3 x 8')
     expect(formatTarget({ measure: 'reps', min: 6, max: 8 }, 3)).toBe('3 x 6-8')
     expect(formatTarget({ measure: 'metres', min: 20, max: 20 }, 3)).toBe('3 x 20m')
-    expect(formatTarget({ measure: 'seconds', min: 30, max: 30, perSide: true }, 3)).toBe('3 x 30s each side')
+    expect(formatTarget({ measure: 'seconds', min: 30, max: 30, perSide: true }, 3)).toBe('3 x 30s')
     expect(formatTarget({ measure: 'seconds', min: 20, max: 40 })).toBe('20-40s')
-    expect(formatTarget({ measure: 'reps', min: 8, max: 8, perSide: true })).toBe('8 reps each side')
+    expect(formatTarget({ measure: 'reps', min: 8, max: 8, perSide: true })).toBe('8 reps')
     expect(formatTarget({ measure: 'seconds', min: 900, max: 900 }, 1)).toBe('1 x 15 min')
     expect(formatTarget({ measure: 'metres', min: 50, max: 50, weightKg: 90 })).toBe('50m @ 90kg')
     expect(formatTarget({ measure: 'metres', min: 50, max: 50, weightKg: 70, goalKg: 164 })).toBe('50m @ 70kg, building to 164kg')

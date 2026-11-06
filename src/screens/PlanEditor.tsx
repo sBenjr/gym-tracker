@@ -25,11 +25,6 @@ export interface EditablePlan {
   notes?: string
 }
 
-const RIR_OPTIONS: { value: number; label: string }[] = [
-  { value: -1, label: 'Off' },
-  ...[0, 1, 2, 3, 4].map((n) => ({ value: n, label: String(n) })),
-]
-
 const AMOUNT_STEP: Record<Measure, number> = { reps: 1, seconds: 15, metres: 25 }
 const AMOUNT_UNIT: Record<Measure, string> = { reps: '', seconds: 'sec', metres: 'm' }
 
@@ -81,7 +76,6 @@ function TargetEditor({
         value={target.max}
         onChange={(max) => onChange({ ...target, max, min: range ? Math.min(target.min, max) : max })}
       />
-      <Toggle label="Each side" checked={!!target.perSide} onChange={(perSide) => onChange({ ...target, perSide })} />
       {exercise?.load === 'weighted' && (
         <div className="two-up">
           <Stepper
@@ -101,14 +95,6 @@ function TargetEditor({
             onChange={(goalKg) => onChange({ ...target, goalKg: goalKg || undefined })}
           />
         </div>
-      )}
-      {target.measure === 'reps' && (
-        <Chips
-          label="Target reps in reserve (optional)"
-          options={RIR_OPTIONS}
-          value={target.rir ?? -1}
-          onChange={(rir) => onChange({ ...target, rir: rir === -1 ? undefined : rir })}
-        />
       )}
       <TextField
         label="Plan note"

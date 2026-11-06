@@ -921,3 +921,171 @@ section + section {
 section > .hint + .button {
   margin-top: 10px;
 }
+
+/* Workout checklist: every exercise listed, the open one showing a row per set. */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.block-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.block-card.open {
+  border-color: var(--accent);
+}
+
+.block-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+}
+
+.block-header-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.block-header .group-label {
+  margin: 0;
+}
+
+.block-progress {
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.block-card.complete .block-progress {
+  color: var(--accent);
+}
+
+.block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 2px 14px 14px;
+}
+
+.exercise-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exercise-sets-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.exercise-sets-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.exercise-sets-title h3 {
+  margin: 0 0 2px;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.set-table {
+  --set-columns: 2rem 1fr 1fr 3.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.set-table.single {
+  --set-columns: 2rem 1fr 3.5rem;
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: var(--set-columns);
+  gap: 8px;
+  align-items: center;
+}
+
+.set-head {
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.set-number {
+  font-weight: 700;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.set-input {
+  width: 100%;
+  min-width: 0;
+  height: var(--tap);
+  padding: 0 6px;
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.set-row.ticked .set-input {
+  color: var(--accent);
+  background: transparent;
+}
+
+.set-label {
+  color: var(--muted);
+}
+
+.tick {
+  width: 100%;
+  height: var(--tap);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.tick.on {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}

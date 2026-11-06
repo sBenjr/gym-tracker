@@ -13,6 +13,12 @@ export const todayIso = (now: Date = new Date()) =>
 
 export const isTickOnly = (target: Target, exercise?: Exercise) => target.max === 0 || exercise?.kind === 'mobility'
 
+/** Every strength move can take a weight, such as a plate held for sit-ups; runs and rows can't. */
+export function takesWeight(exercise?: Exercise): boolean {
+  if (!exercise || exercise.kind === 'mobility') return false
+  return exercise.kind === 'strength' || exercise.load !== 'bodyweight'
+}
+
 /** HIIT is logged once for the whole block; everything else once per set or round. */
 const logsPerItem = (session: Session, block: Block) => (session.type === 'hiit' ? 1 : block.rounds)
 
@@ -138,11 +144,12 @@ export function prefill(
       restSec: sameSet?.restSec ?? block.restSec ?? workSec * 3,
     }
   }
+  // Reps, time and distance always come from the plan; only the weight moves on from last time.
   return {
     weightKg,
-    reps: target.measure === 'reps' ? (sameSet?.reps ?? earlier?.reps ?? target.min) : sameSet?.reps,
-    seconds: target.measure === 'seconds' ? (sameSet?.seconds ?? target.max) : sameSet?.seconds,
-    metres: target.measure === 'metres' ? (sameSet?.metres ?? target.max) : sameSet?.metres,
+    reps: target.measure === 'reps' ? target.min : sameSet?.reps,
+    seconds: target.measure === 'seconds' ? target.max : sameSet?.seconds,
+    metres: target.measure === 'metres' ? target.max : sameSet?.metres,
   }
 }
 
