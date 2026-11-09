@@ -1,10 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Flexed arm: "arm-flex" from Material Design Icons (Pictogrammers), Apache License 2.0. -->
   <rect width="512" height="512" fill="#0e1113"/>
-  <g fill="#c6f135">
-    <rect x="96" y="176" width="48" height="160" rx="12"/>
-    <rect x="152" y="136" width="48" height="240" rx="12"/>
-    <rect x="312" y="136" width="48" height="240" rx="12"/>
-    <rect x="368" y="176" width="48" height="160" rx="12"/>
-    <rect x="200" y="232" width="112" height="48"/>
-  </g>
+  <path fill="#c6f135" transform="translate(47 49) scale(17)" d="M3 18.34C3 18.34 4 7.09 7 3L12 4L11 7.09H9V14.25H10C12 11.18 16.14 10.06 18.64 11.18C21.94 12.71 21.64 17.32 18.64 19.36C16.24 21 9 22.43 3 18.34Z"/>
 </svg>

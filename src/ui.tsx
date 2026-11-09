@@ -181,14 +181,22 @@ export function TextField({
   placeholder?: string
   multiline?: boolean
 }) {
+  // What you type shows straight away. When the value is saved to the database and read back,
+  // waiting for it would make a phone keyboard drop letters.
+  const [draft, setDraft] = useState<string | null>(null)
+  const props = {
+    value: draft ?? value,
+    placeholder,
+    onChange: (e: { target: { value: string } }) => {
+      setDraft(e.target.value)
+      onChange(e.target.value)
+    },
+    onBlur: () => setDraft(null),
+  }
   return (
     <label className="text-field">
       <span className="field-label">{label}</span>
-      {multiline ? (
-        <textarea rows={3} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
-      ) : (
-        <input value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
-      )}
+      {multiline ? <textarea rows={3} {...props} /> : <input {...props} />}
     </label>
   )
 }

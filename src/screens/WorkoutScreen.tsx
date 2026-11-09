@@ -120,8 +120,8 @@ function ExerciseSets({
 }) {
   const last = useLastTime(item.exerciseId, session.id)
   const [rows, setRows] = useState<Record<number, RowText>>({})
-  const [extra, setExtra] = useState(0)
   const [options, setOptions] = useState(false)
+  const [failed, setFailed] = useState('')
   const name = exercise?.name ?? 'Unknown exercise'
   const { target } = item
   const measure = target.measure
@@ -132,7 +132,7 @@ function ExerciseSets({
   const byRound = new Map(mine.map((log) => [log.round, log]))
   const skippedIds = session.skippedItemIds ?? []
   const skipped = skippedIds.includes(item.id)
-  const rounds = Array.from({ length: Math.max(block.rounds, ...mine.map((log) => log.round)) + extra }, (_, i) => i + 1)
+  const rounds = Array.from({ length: Math.max(block.rounds, ...mine.map((log) => log.round)) }, (_, i) => i + 1)
   const lastSets = last?.value?.sets ?? []
 
   const fromSet = (set: SetDraft): RowText => ({ weight: asText(set.weightKg), amount: asText(set[field]) })
@@ -149,21 +149,37 @@ function ExerciseSets({
     return draft
   }
 
-  const tick = async (round: number) => {
-    unlockAudio()
-    const text = textFor(round)
-    setRows((current) => ({ ...current, [round]: text }))
-    onLogged(await logSet(db, session, block, item, round, draftFrom(text), exercise), block)
+  // If saving ever fails, say so on screen rather than leaving a tick that seems to do nothing.
+  const attempt = async (what: string, action: () => Promise<void>) => {
+    try {
+      setFailed('')
+      await action()
+    } catch (error) {
+      setFailed(`${what} didn't save (${error instanceof Error ? error.message : String(error)}). Please try again.`)
+    }
   }
 
-  // Unticking keeps what was typed, and stops the rest that set started.
-  const untick = async (log: SetLog) => {
-    setRows((current) => ({ ...current, [log.round]: textFor(log.round, current) }))
-    await db.transaction('rw', db.sets, db.sessions, async () => {
-      await db.sets.delete(log.id)
-      await db.sessions.update(session.id, { restEndsAt: undefined })
+  const tick = (round: number) =>
+    attempt(`Set ${round}`, async () => {
+      try {
+        unlockAudio()
+      } catch {
+        // No beep is better than no set.
+      }
+      const text = textFor(round)
+      setRows((current) => ({ ...current, [round]: text }))
+      onLogged(await logSet(db, session, block, item, round, draftFrom(text), exercise), block)
     })
-  }
+
+  // Unticking keeps what was typed, and stops the rest that set started.
+  const untick = (log: SetLog) =>
+    attempt(`Set ${log.round}`, async () => {
+      setRows((current) => ({ ...current, [log.round]: textFor(log.round, current) }))
+      await db.transaction('rw', db.sets, db.sessions, async () => {
+        await db.sets.delete(log.id)
+        await db.sessions.update(session.id, { restEndsAt: undefined })
+      })
+    })
 
   const change = (round: number, key: keyof RowText, value: string) => {
     setRows((current) => {
@@ -186,7 +202,7 @@ function ExerciseSets({
     const draft = draftFrom(text)
     const changes: Partial<SetLog> = { weightKg: draft.weightKg }
     changes[field] = draft[field]
-    await db.sets.update(log.id, changes)
+    await attempt(`The change to set ${round}`, async () => void (await db.sets.update(log.id, changes)))
   }
 
   const setSkipped = (skip: boolean) =>
@@ -254,17 +270,23 @@ function ExerciseSets({
           >
             {skipped ? 'Bring back' : 'Skip today'}
           </button>
+          <HowToLink name={name} />
         </div>
       )}
       {target.note && <p className="hint">{target.note}</p>}
       {exercise?.notes && <p className="cue">{exercise.notes}</p>}
+      {failed && (
+        <p className="notice" role="alert">
+          {failed}
+        </p>
+      )}
       {skipped ? (
         <p className="hint">Skipped today.</p>
       ) : (
         <>
           {showTitle && !tickOnly && <LastTime last={last} />}
-          {last !== undefined && (
-            <div className={weighted ? 'set-table' : 'set-table single'}>
+          {/* Drawn straight away; the weights from last time fill in when they arrive. */}
+          <div className={weighted ? 'set-table' : 'set-table single'}>
               {!tickOnly && (
                 <div className="set-row set-head" aria-hidden="true">
                   <span>Set</span>
@@ -296,16 +318,24 @@ function ExerciseSets({
                   </div>
                 )
               })}
-            </div>
-          )}
-          {!tickOnly && (
-            <button type="button" className="link-button" onClick={() => setExtra(extra + 1)}>
-              + Add set
-            </button>
-          )}
+          </div>
         </>
       )}
     </section>
+  )
+}
+
+/** Opens a YouTube search for the exercise, which goes to the YouTube app on a phone. */
+function HowToLink({ name }: { name: string }) {
+  return (
+    <a
+      className="button small"
+      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`how to do ${name} exercise`)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      How to (YouTube)
+    </a>
   )
 }
 
@@ -669,6 +699,7 @@ function ExerciseRow({
           >
             {skipped ? 'Bring back' : 'Skip today'}
           </button>
+          {exercise && <HowToLink name={exercise.name} />}
         </div>
       )}
     </div>

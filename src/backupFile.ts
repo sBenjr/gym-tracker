@@ -29,7 +29,7 @@ export async function sendBackup(backup: Backup): Promise<SaveResult> {
   const file = shareableFile(JSON.stringify(backup), backup.exportedAt)
   if (file) {
     try {
-      await navigator.share({ files: [file], title: 'Gym Tracker backup' })
+      await navigator.share({ files: [file], title: 'Grit backup' })
       return 'sent'
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled'

@@ -3,3 +3,4 @@ dist/
 # Personal training data, names and dates: never publish
 private/
 *.local
+*.tsbuildinfo

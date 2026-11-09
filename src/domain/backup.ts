@@ -10,7 +10,7 @@ export const BACKUP_NUDGE_AFTER = 3
 /** Far more than years of training, so picking a video by mistake can't freeze the phone. */
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024
 
-export const NOT_A_BACKUP = "That file isn't a Gym Tracker backup, so nothing was changed."
+export const NOT_A_BACKUP = "That file isn't a Grit backup, so nothing was changed."
 const DAMAGED = 'That backup looks damaged, so nothing was changed.'
 const PLANS_FILE = "That's a plans file, so nothing was changed. Use Load plans file for those."
 const TOO_NEW = 'That backup came from a newer version of the app. Close and reopen the app to update it, then try again.'

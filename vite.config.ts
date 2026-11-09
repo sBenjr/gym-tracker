@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'Gym Tracker',
-        short_name: 'Gym',
-        description: 'Follow a training programme and log every set, offline.',
+        name: 'Grit',
+        short_name: 'Grit',
+        description: 'Grit: follow your training plan and log every set, offline.',
         start_url: './',
         scope: './',
         display: 'standalone',
