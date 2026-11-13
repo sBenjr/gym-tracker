@@ -106,13 +106,26 @@ function TargetEditor({
   )
 }
 
+/** Settings for an exercise you add yourself, so a rower gets distance and time rather than kg and reps. */
+const NEW_EXERCISE: Record<ExerciseKind, Partial<Exercise>> = {
+  strength: { kind: 'strength' },
+  conditioning: { kind: 'conditioning', equipment: 'cardio_machine', load: 'bodyweight', measure: 'metres' },
+  mobility: { kind: 'mobility', equipment: 'bodyweight', load: 'bodyweight' },
+}
+
+const NEW_EXERCISE_CHOICES: { kind: ExerciseKind; label: string }[] = [
+  { kind: 'strength', label: 'Strength: kg and reps' },
+  { kind: 'conditioning', label: 'Conditioning: distance and time' },
+  { kind: 'mobility', label: 'Mobility: tick when done' },
+]
+
 export function ExercisePicker({ onPick, onClose }: { onPick: (exercise: Exercise) => void; onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<ExerciseKind | 'all'>('all')
-  const createAndPick = async () => {
+  const createAndPick = async (kind: ExerciseKind) => {
     const name = query.trim()
     if (!name) return
-    const exercise = newExercise(name, { check: 'Added while building a session; check the details.' })
+    const exercise = newExercise(name, { ...NEW_EXERCISE[kind], check: 'Added while building a session; check the details.' })
     const existing = await db.exercises.get(exercise.id)
     if (!existing) await db.exercises.add(exercise)
     onPick(existing ?? exercise)
@@ -137,9 +150,14 @@ export function ExercisePicker({ onPick, onClose }: { onPick: (exercise: Exercis
         />
         <Chips options={[{ value: 'all' as const, label: 'All' }, ...EXERCISE_KINDS]} value={filter} onChange={setFilter} />
         {query.trim() && (
-          <button type="button" className="button" onClick={createAndPick}>
-            Add new: "{query.trim()}"
-          </button>
+          <div className="create-new">
+            <p className="hint">Not listed? Add "{query.trim()}" as:</p>
+            {NEW_EXERCISE_CHOICES.map((choice) => (
+              <button key={choice.kind} type="button" className="button" onClick={() => void createAndPick(choice.kind)}>
+                {choice.label}
+              </button>
+            ))}
+          </div>
         )}
         <ExerciseList query={query} filter={filter} onPick={onPick} />
       </main>

@@ -209,6 +209,11 @@ section + section {
   font-size: 0.9rem;
 }
 
+.create-new {
+  display: grid;
+  gap: 8px;
+}
+
 .action-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1020,6 +1025,20 @@ section > .hint + .button {
 
 .set-table.single {
   --set-columns: 2rem 1fr 3.5rem;
+}
+
+/* Weight, distance and time, as for a sled push: narrower so all three fit on a phone. */
+.set-table.triple {
+  --set-columns: 1.5rem 1fr 1fr 1fr 3rem;
+}
+
+.set-table.triple .set-row {
+  gap: 6px;
+}
+
+.set-table.triple .set-input {
+  padding: 0 2px;
+  font-size: 1.1rem;
 }
 
 .set-row {

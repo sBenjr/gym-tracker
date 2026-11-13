@@ -158,11 +158,16 @@ export function formatDuration(seconds: number): string {
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
 }
 
-/** Accepts "1:30" or a plain number of seconds. */
+/**
+ * Accepts "1:30", "1:02:30" or a plain number of seconds. A phone's number pad has no colon,
+ * so "1.30" and "1,30" mean 1 minute 30 seconds too.
+ */
 export function parseDuration(text: string): number | null {
-  const match = text.trim().match(/^(?:(\d+):)?(\d+)$/)
-  if (!match) return null
-  return (match[1] ? parseInt(match[1], 10) * 60 : 0) + parseInt(match[2], 10)
+  const parts = text.trim().split(/[:.,]/)
+  if (parts.length > 3 || parts.some((part) => !/^\d+$/.test(part))) return null
+  const [first, ...rest] = parts.map(Number)
+  if (rest.some((n) => n >= 60)) return null
+  return rest.reduce((total, n) => total * 60 + n, first)
 }
 
 export function formatSet(set: SetDraft): string {

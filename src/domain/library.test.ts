@@ -2,7 +2,7 @@ import Dexie from 'dexie'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { GymDb } from '../db'
 import seed from '../../seed/exercises.json'
-import { exerciseId, matchesSearch, searchExercises, type SeedExercise } from './exercises'
+import { exerciseId, matchesSearch, newExercise, searchExercises, type SeedExercise } from './exercises'
 import { ensureLibrary, importStarter, isStarterData, type StarterData } from './library'
 
 const library = seed as SeedExercise[]
@@ -54,6 +54,24 @@ describe('the seed library', () => {
     await db.exercises.update(id, { restSec: 75 })
     expect(await ensureLibrary(db, library)).toBe(0)
     expect((await db.exercises.get(id))?.restSec).toBe(75)
+  })
+
+  it('gives exercises already on the phone their new search words', async () => {
+    const older = library.map((e) => (e.name === 'Rowing Machine' ? { ...e, aliases: [] } : e))
+    await ensureLibrary(db, older)
+    await ensureLibrary(db, library)
+    const all = await db.exercises.toArray()
+    expect(searchExercises(all, 'indoor row')[0]?.name).toBe('Rowing Machine')
+  })
+
+  it('turns a kg-and-reps exercise you added called "Indoor Row" into a rower', async () => {
+    await ensureLibrary(db, library)
+    await db.exercises.add(newExercise('Indoor Row', { check: 'Added while building a session; check the details.' }))
+    await db.exercises.add(newExercise('Row With A Twist'))
+    await ensureLibrary(db, library)
+    const row = await db.exercises.get(exerciseId('Indoor Row'))
+    expect(row).toMatchObject({ kind: 'conditioning', equipment: 'cardio_machine', load: 'bodyweight', measure: 'metres' })
+    expect((await db.exercises.get(exerciseId('Row With A Twist')))?.kind).toBe('strength')
   })
 
   it('moves an existing library from the old 2 minute rest to 45 seconds, keeping custom rests', async () => {

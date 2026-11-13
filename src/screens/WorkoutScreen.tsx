@@ -25,7 +25,7 @@ import {
 } from '../domain/workout'
 import { restOverAlert, unlockAudio, useNow, useWakeLock } from '../feedback'
 import { navigate } from '../router'
-import type { Block, BlockItem, Exercise, Measure, Session, SetLog } from '../types'
+import type { Block, BlockItem, Exercise, Measure, Session, SetLog, Target } from '../types'
 import { Chips, ConfirmButton, DurationField, Header, Stepper, TextField } from '../ui'
 import { ExercisePicker } from './PlanEditor'
 
@@ -77,26 +77,50 @@ function RestBar({ session }: { session: Session }) {
 
 // ---------- Strength and Hyrox: a checklist of every set
 
-const AMOUNT_LABEL: Record<Measure, string> = { reps: 'reps', seconds: 'sec', metres: 'm' }
-const AMOUNT_FIELD = { reps: 'reps', seconds: 'seconds', metres: 'metres' } as const
+type FieldKey = 'weightKg' | 'reps' | 'seconds' | 'metres'
 
-/** What's typed in a set row, kept as text so a half-typed "22." isn't lost. */
-interface RowText {
-  weight: string
-  amount: string
+/** One box in a set row. */
+interface Field {
+  key: FieldKey
+  /** The column heading. */
+  head: string
+  /** Read out with the set number, e.g. "Set 1 weight". */
+  label: string
+  inputMode: 'decimal' | 'numeric'
+  parse: (text: string) => number | undefined
+  format: (n: number) => string
 }
 
-const asText = (n?: number) => (n === undefined || Number.isNaN(n) ? '' : String(n))
+/** What's typed in a set row, kept as text so a half-typed "22." isn't lost. */
+type RowText = Partial<Record<FieldKey, string>>
 
 function parseWeight(text: string): number | undefined {
   const n = parseFloat(text.replace(',', '.'))
   return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : undefined
 }
 
-function parseAmount(text: string, measure: Measure): number | undefined {
-  if (measure === 'seconds') return parseDuration(text) ?? undefined
+function parseCount(text: string): number | undefined {
   const n = parseFloat(text.replace(',', '.'))
   return Number.isFinite(n) && n >= 0 ? Math.round(n) : undefined
+}
+
+const parseTime = (text: string) => parseDuration(text) ?? undefined
+
+const WEIGHT: Field = { key: 'weightKg', head: 'kg', label: 'weight', inputMode: 'decimal', parse: parseWeight, format: String }
+const AMOUNT: Record<Measure, Field> = {
+  reps: { key: 'reps', head: 'reps', label: 'reps', inputMode: 'numeric', parse: parseCount, format: String },
+  seconds: { key: 'seconds', head: 'sec', label: 'sec', inputMode: 'numeric', parse: parseTime, format: String },
+  metres: { key: 'metres', head: 'm', label: 'm', inputMode: 'numeric', parse: parseCount, format: String },
+}
+// The decimal pad has a full stop, which stands in for the colon in "7.45".
+const TIME: Field = { key: 'seconds', head: 'time', label: 'time', inputMode: 'decimal', parse: parseTime, format: formatDuration }
+
+/** Rowing, running, ski erg, sleds and carries are logged as a distance and a time; the rest by the plan's amount. */
+function fieldsFor(target: Target, exercise: Exercise | undefined, tickOnly: boolean): Field[] {
+  if (tickOnly) return []
+  const weight = takesWeight(exercise) ? [WEIGHT] : []
+  if (exercise?.kind === 'conditioning' && exercise.measure !== 'reps') return [...weight, AMOUNT.metres, TIME]
+  return [...weight, AMOUNT[target.measure]]
 }
 
 function ExerciseSets({
@@ -124,10 +148,8 @@ function ExerciseSets({
   const [failed, setFailed] = useState('')
   const name = exercise?.name ?? 'Unknown exercise'
   const { target } = item
-  const measure = target.measure
-  const field = AMOUNT_FIELD[measure]
   const tickOnly = isTickOnly(target, exercise)
-  const weighted = !tickOnly && takesWeight(exercise)
+  const fields = fieldsFor(target, exercise, tickOnly)
   const mine = logs.filter((log) => log.itemId === item.id)
   const byRound = new Map(mine.map((log) => [log.round, log]))
   const skippedIds = session.skippedItemIds ?? []
@@ -135,17 +157,33 @@ function ExerciseSets({
   const rounds = Array.from({ length: Math.max(block.rounds, ...mine.map((log) => log.round)) }, (_, i) => i + 1)
   const lastSets = last?.value?.sets ?? []
 
-  const fromSet = (set: SetDraft): RowText => ({ weight: asText(set.weightKg), amount: asText(set[field]) })
-  const textFor = (round: number, current = rows): RowText =>
-    current[round] ?? fromSet(byRound.get(round) ?? prefill(session, block, target, round, lastSets, mine))
+  // Weight and the planned amount fill in. A result such as a time is left for you to type,
+  // so ticking straight away never records last week's time as today's.
+  const fromSet = (set: SetDraft, logged: boolean): RowText => {
+    const text: RowText = {}
+    for (const field of fields) {
+      const n = set[field.key]
+      const planned = logged || field.key === 'weightKg' || field.key === target.measure
+      text[field.key] = planned && n !== undefined && !Number.isNaN(n) ? field.format(n) : ''
+    }
+    return text
+  }
+  const textFor = (round: number, current = rows): RowText => {
+    const log = byRound.get(round)
+    return current[round] ?? fromSet(log ?? prefill(session, block, target, round, lastSets, mine), !!log)
+  }
+  /** Last time's result shows faintly in an empty box. */
+  const hintFor = (round: number, field: Field) => {
+    const n = lastSets.find((set) => set.round === round)?.[field.key]
+    return n === undefined ? '–' : field.format(n)
+  }
 
   const draftFrom = (text: RowText): SetDraft => {
     const draft: SetDraft = {}
-    if (tickOnly) return draft
-    const amount = parseAmount(text.amount, measure)
-    if (amount !== undefined) draft[field] = amount
-    const weight = weighted ? parseWeight(text.weight) : undefined
-    if (weight !== undefined) draft.weightKg = weight
+    for (const field of fields) {
+      const n = field.parse(text[field.key] ?? '')
+      if (n !== undefined) draft[field.key] = n
+    }
     return draft
   }
 
@@ -181,13 +219,13 @@ function ExerciseSets({
       })
     })
 
-  const change = (round: number, key: keyof RowText, value: string) => {
+  const change = (round: number, key: FieldKey, value: string) => {
     setRows((current) => {
       const next = { ...current, [round]: { ...textFor(round, current), [key]: value } }
       // A new weight carries on to the sets still to do. Reps stay as planned.
-      if (key === 'weight') {
+      if (key === 'weightKg') {
         for (const later of rounds) {
-          if (later > round && !byRound.has(later)) next[later] = { ...textFor(later, current), weight: value }
+          if (later > round && !byRound.has(later)) next[later] = { ...textFor(later, current), weightKg: value }
         }
       }
       return next
@@ -200,8 +238,8 @@ function ExerciseSets({
     const text = rows[round]
     if (!log || !text) return
     const draft = draftFrom(text)
-    const changes: Partial<SetLog> = { weightKg: draft.weightKg }
-    changes[field] = draft[field]
+    const changes: Partial<SetLog> = {}
+    for (const field of fields) changes[field.key] = draft[field.key]
     await attempt(`The change to set ${round}`, async () => void (await db.sets.update(log.id, changes)))
   }
 
@@ -210,14 +248,15 @@ function ExerciseSets({
       skippedItemIds: skip ? [...skippedIds, item.id] : skippedIds.filter((id) => id !== item.id),
     })
 
-  const input = (round: number, key: keyof RowText, label: string, inputMode: 'decimal' | 'numeric') => (
+  const input = (round: number, field: Field) => (
     <input
+      key={field.key}
       className="set-input"
-      aria-label={`Set ${round} ${label}`}
-      inputMode={inputMode}
-      placeholder="–"
-      value={textFor(round)[key]}
-      onChange={(e) => change(round, key, e.target.value)}
+      aria-label={`Set ${round} ${field.label}`}
+      inputMode={field.inputMode}
+      placeholder={hintFor(round, field)}
+      value={textFor(round)[field.key] ?? ''}
+      onChange={(e) => change(round, field.key, e.target.value)}
       onFocus={(e) => e.target.select()}
       onBlur={() => void save(round)}
       onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
@@ -286,12 +325,13 @@ function ExerciseSets({
         <>
           {showTitle && !tickOnly && <LastTime last={last} />}
           {/* Drawn straight away; the weights from last time fill in when they arrive. */}
-          <div className={weighted ? 'set-table' : 'set-table single'}>
+          <div className={fields.length <= 1 ? 'set-table single' : fields.length === 2 ? 'set-table' : 'set-table triple'}>
               {!tickOnly && (
                 <div className="set-row set-head" aria-hidden="true">
                   <span>Set</span>
-                  {weighted && <span>kg</span>}
-                  <span>{AMOUNT_LABEL[measure]}</span>
+                  {fields.map((field) => (
+                    <span key={field.key}>{field.head}</span>
+                  ))}
                   <span />
                 </div>
               )}
@@ -300,12 +340,7 @@ function ExerciseSets({
                 return (
                   <div key={round} className={log ? 'set-row ticked' : 'set-row'}>
                     <span className="set-number">{round}</span>
-                    {weighted && input(round, 'weight', 'weight', 'decimal')}
-                    {tickOnly ? (
-                      <span className="set-label">Tick when done</span>
-                    ) : (
-                      input(round, 'amount', AMOUNT_LABEL[measure], 'numeric')
-                    )}
+                    {tickOnly ? <span className="set-label">Tick when done</span> : fields.map((field) => input(round, field))}
                     <button
                       type="button"
                       className={log ? 'tick on' : 'tick'}

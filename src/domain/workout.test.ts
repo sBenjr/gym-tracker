@@ -213,6 +213,14 @@ describe('showing what you did', () => {
     expect(parseDuration('90')).toBe(90)
     expect(parseDuration('abc')).toBeNull()
   })
+
+  it('reads a time typed on a number pad without a colon', () => {
+    expect(parseDuration('7.45')).toBe(465)
+    expect(parseDuration('7,45')).toBe(465)
+    expect(parseDuration('1:02:30')).toBe(3750)
+    expect(parseDuration('7.75')).toBeNull()
+    expect(parseDuration('7.')).toBeNull()
+  })
 })
 
 describe('choosing the session', () => {

@@ -81,7 +81,7 @@ const SHORTHAND: Record<string, string> = {
   pulldown: 'pull down',
 }
 
-const normalise = (text: string) =>
+export const normalise = (text: string) =>
   text
     .toLowerCase()
     .replace(/[^a-z0-9/° ]+/g, ' ')
